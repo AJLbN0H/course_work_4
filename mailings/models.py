@@ -31,9 +31,9 @@ class Message(models.Model): #Сообщение
 
 class Newsletter(models.Model): #Рассылки
 
-    sending = models.DateTimeField(verbose_name="Дата и время первой отправки")
-    end_of_sending = models.DateTimeField(verbose_name="Дата и время окончания отправки")
-    status = models.CharField(verbose_name="Статус")
+    sending_date = models.DateTimeField(verbose_name="Дата и время первой отправки")
+    end_date_of_send = models.DateTimeField(verbose_name="Дата и время окончания отправки")
+    status = models.CharField(max_length=9, verbose_name="Статус")
     message  = models.ForeignKey(Message, verbose_name="Сообщение", blank=True, null=True, on_delete=models.CASCADE)
     recipients = models.ManyToManyField(MailingRecipient, verbose_name="Получатели", blank=True, null=True)
 
@@ -43,4 +43,20 @@ class Newsletter(models.Model): #Рассылки
     class Meta:
         verbose_name = "Рассылка"
         verbose_name_plural = "Рассылки"
-        ordering = ["sending", "end_of_sending", "status"]
+        ordering = ["sending_date", "end_date_of_send", "status"]
+
+
+class AttemptToSend(models.Model): #Попытка рассылки
+
+    date_of_attempt = models.DateTimeField(verbose_name="Дата и время попытки", auto_now=True)
+    status = models.CharField(max_length=10, verbose_name="Статус")
+    mail_server_response = models.TextField(verbose_name="Ответ почтового сервера")
+    newsletter  = models.ForeignKey(Newsletter, verbose_name="Рассылка", blank=True, null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.status}, {self.date_of_attempt}'
+
+    class Meta:
+        verbose_name = "Попытка рассылки"
+        verbose_name_plural = "Попытки рассылок"
+        ordering = ["date_of_attempt", "status"]
