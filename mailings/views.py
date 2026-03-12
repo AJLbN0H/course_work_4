@@ -1,4 +1,4 @@
-from django.core import cache
+from django.core.cache import cache
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -161,7 +161,6 @@ class HomePageListView(ListView):
     template_name = "mailings_message/home_page.html"
 
     def get_context_data(self, *, object_list=None, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         context["number_of_mailings"] = len(Newsletter.objects.all())

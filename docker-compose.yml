@@ -1,51 +1,44 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${NAME}
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER} -d ${NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
-  app:
+  web:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - .:/app
+    # Ждем базу, накатываем миграции и запускаем сервер
+    command: >
+      bash -c "python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     depends_on:
-      - db
-      - redis
-    environment:
-      - SECRET_KEY=django-insecure-key-for-github
-      - DEBUG=True
-      - HOST=db
-      - NAME=postgres
-      - USER=postgres
-      - PASSWORD=postgres
-      - PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-
-  celery:
-    build: .
-    command: python -m celery -A config worker -l info
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
-      - .:/app
-    depends_on:
-      - db
-      - redis
-    environment:
-      - host=db
-      - NAME=postgres
-      - USER=postgres
-      - PASSWORD=postgres
-      - PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - .:/app  # Синхронизируем код, чтобы видеть изменения локально
 
 volumes:
-  postgres_data:
+  pg_data:
