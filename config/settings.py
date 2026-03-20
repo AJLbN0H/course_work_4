@@ -157,3 +157,16 @@ if CACHE_ENABLED:
             "LOCATION": os.getenv("CACHE_LOCATION"),
         }
     }
+
+CELERY_BROKER_URL = os.getenv("CACHE_LOCATION")
+CELERY_RESULT_BACKEND = os.getenv("CACHE_LOCATION")
+CELERY_TIMEZONE = TIME_ZONE
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "send_active_newsletters": {
+        "task": "mailings.tasks.send_all_newsletters",
+        "schedule": crontab(minute="*/1"), 
+    },
+}

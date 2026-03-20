@@ -46,6 +46,10 @@
     python manage.py migrate
     python manage.py runserver
 
+   Для работы автоматических рассылок потребуется запустить Redis-сервер локально, а также компоненты Celery в отдельных терминалах:
+    celery -A config worker -l info
+    celery -A config beat -l info
+
 ## Тестирование
 Для запуска тестов используйте:
 

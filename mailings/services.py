@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.conf import settings
 from mailings.models import Newsletter, AttemptToSend
 
 
@@ -24,7 +25,7 @@ class NewsletterService:
 
                 subject = newsletter.message.topic
                 message_ = newsletter.message.content
-                from_email = "Sasha.kel-1@yandex.ru"
+                from_email = settings.DEFAULT_FROM_EMAIL
                 recipient_list = [
                     recipient.email for recipient in newsletter.recipients.all()
                 ]
