@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -78,16 +79,27 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.getenv("NAME"),
-        "USER": os.getenv("USER"),
-        "PASSWORD": os.getenv("PASSWORD"),
-        "HOST": os.getenv("HOST"),
-        "PORT": os.getenv("PORT"),
+IS_TEST_RUN = any("pytest" in arg for arg in sys.argv)
+
+if IS_TEST_RUN:
+    # Keep tests independent from external services.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql_psycopg2",
+            "NAME": os.getenv("NAME"),
+            "USER": os.getenv("USER"),
+            "PASSWORD": os.getenv("PASSWORD"),
+            "HOST": os.getenv("HOST"),
+            "PORT": os.getenv("PORT"),
+        }
+    }
 
 
 # Password validation
@@ -151,15 +163,22 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 CACHE_ENABLED = True
 if CACHE_ENABLED:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": os.getenv("CACHE_LOCATION"),
+    if IS_TEST_RUN:
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            }
         }
-    }
+    else:
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.redis.RedisCache",
+                "LOCATION": os.getenv("CACHE_LOCATION"),
+            }
+        }
 
-CELERY_BROKER_URL = os.getenv("CACHE_LOCATION")
-CELERY_RESULT_BACKEND = os.getenv("CACHE_LOCATION")
+CELERY_BROKER_URL = "memory://" if IS_TEST_RUN else os.getenv("CACHE_LOCATION")
+CELERY_RESULT_BACKEND = "cache+memory://" if IS_TEST_RUN else os.getenv("CACHE_LOCATION")
 CELERY_TIMEZONE = TIME_ZONE
 
 from celery.schedules import crontab
